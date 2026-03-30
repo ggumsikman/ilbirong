@@ -40,6 +40,25 @@
                     </div>
                 </div>
 
+                <!-- 비규격 직접 입력 (기본 숨김) -->
+                <div id="customSizeGroup" class="input-group custom-size-group" style="display: none;">
+                    <label>사이즈 직접 입력 (가로 x 세로)</label>
+                    <div class="size-inputs">
+                        <div class="size-input-wrapper">
+                            <input type="number" id="customWidth" placeholder="가로" min="1">
+                            <span class="unit">cm</span>
+                        </div>
+                        <span class="cross-icon">×</span>
+                        <div class="size-input-wrapper">
+                            <input type="number" id="customHeight" placeholder="세로" min="1">
+                            <span class="unit">cm</span>
+                        </div>
+                    </div>
+                    <div class="custom-price-preview">
+                        예상 단가: <strong id="customDynamicPrice">0원</strong>
+                    </div>
+                </div>
+
                 <div class="quantity-add-group">
                     <div class="quantity-control" style="opacity: 0.5; pointer-events: none;" id="quantityWrapper">
                         <button type="button" id="btnMinus" aria-label="수량 감소">-</button>

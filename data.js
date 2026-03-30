@@ -12,7 +12,7 @@ const PRODUCT_DATA = [
             { id: "c1_5", name: "포토존 200cm x 180cm", price: 38000 },
             { id: "c1_6", name: "포토존 240cm x 180cm", price: 45000 },
             { id: "c1_7", name: "포토존 300cm x 200cm", price: 80000 },
-            { id: "c1_8", name: "비규격 맞춤제작 (별도 문의 안내)", price: 30000, isCustom: true }
+            { id: "c1_8", name: "비규격(직접입력)", price: 0, isDynamicCustom: true }
         ]
     },
     {
