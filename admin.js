@@ -203,31 +203,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === 저장 로직 ===
+    // === 저장 로직 (저장 + 파일 다운로드 동시 진행) ===
     btnAdminSave.addEventListener('click', () => {
+        // 1. 브라우저 localStorage에 안전하게 저장 (앱 즉시 반영용)
         window.PRODUCT_DATA = draftData;
         window.DataManager.saveData(draftData);
-        alert("데이터가 성공적으로 저장되었습니다!");
         adminModal.style.display = 'none';
         
-        // 메인 화면 초기화 통지 (app.js 측 함수 호출)
         if (typeof window.reinitApp === 'function') {
             window.reinitApp();
         }
-    });
 
-    // === 데이터 내보내기 로직 ===
-    const btnAdminExport = document.getElementById('btnAdminExport');
-    if (btnAdminExport) {
-        btnAdminExport.addEventListener('click', () => {
-            if (confirm("현재 작성하신 데이터를 웹 배포용 'data.js' 파일로 다운로드 하시겠습니까?\n(다운로드 전 현재 작성한 내용이 저장됩니다)")) {
-                // 다운로드 전 로컬에 먼저 안전하게 저장
-                window.PRODUCT_DATA = draftData;
-                window.DataManager.saveData(draftData);
-                if (typeof window.reinitApp === 'function') window.reinitApp();
-
-                const dataJson = JSON.stringify(draftData, null, 4);
-                const fileContent = `// 일비롱디자인 애플리케이션 초기 데이터 구조 (초기화 빌드용)
+        // 2. data.js 파일 생성용 문자열 만들기
+        const dataJson = JSON.stringify(draftData, null, 4);
+        const fileContent = `// 일비롱디자인 애플리케이션 초기 데이터 구조 (초기화 빌드용)
 // 이 파일은 브라우저의 localStorage가 비어있을 때 또는 GitHub 배포용으로 사용됩니다.
 const INITIAL_PRODUCT_DATA = ${dataJson};
 
@@ -256,19 +245,21 @@ const DataManager = {
 
 window.PRODUCT_DATA = DataManager.loadData();
 `;
-                // Blob 및 파일 다운로드 트리거
-                const blob = new Blob([fileContent], { type: "text/javascript;charset=utf-8" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "data.js";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        });
-    }
+
+        // 3. 파일 다운로드 (브라우저 유도)
+        const blob = new Blob([fileContent], { type: "text/javascript;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "data.js";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // 4. 대표님 전용 맞춤 팝업 (가장 마지막에 띄움)
+        alert("다운로드 폴더에서 꿈식맨에게 'data.js' 파일을 전달해 주세요");
+    });
 
     // === 초기화 로직 ===
     btnAdminReset.addEventListener('click', () => {
