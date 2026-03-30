@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>일비롱디자인 자동 견적 계산기</title>
+    <meta name="description" content="유아교육기관 전문 디자인 업체 '일비롱디자인'의 자동 견적 계산기입니다. 원하시는 상품을 선택해 예상 견적을 확인해보세요!">
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts: 둥근고딕 느낌의 'Jua' 혹은 부드러운 'Noto Sans KR' -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1>일비롱디자인</h1>
+            <p>자동 견적 계산기 🎨</p>
+        </header>
+
+        <main>
+            <section class="selector-section">
+                <!-- 카테고리 선택 -->
+                <div class="input-group">
+                    <label for="categorySelect">분류</label>
+                    <div class="custom-select">
+                        <select id="categorySelect">
+                            <option value="">카테고리를 선택해주세요</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 상품 선택 -->
+                <div class="input-group">
+                    <label for="productSelect">상품 및 크기</label>
+                    <div class="custom-select">
+                        <select id="productSelect" disabled>
+                            <option value="">먼저 카테고리를 선택해주세요</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="quantity-add-group">
+                    <div class="quantity-control" style="opacity: 0.5; pointer-events: none;" id="quantityWrapper">
+                        <button type="button" id="btnMinus" aria-label="수량 감소">-</button>
+                        <input type="number" id="quantityInput" value="1" min="1" readonly>
+                        <button type="button" id="btnPlus" aria-label="수량 증가">+</button>
+                    </div>
+                    <button type="button" id="btnAddCart" class="btn-primary" disabled>장바구니 담기</button>
+                </div>
+            </section>
+
+            <section class="cart-section">
+                <div class="cart-header">
+                    <h2>나의 장바구니 🛒</h2>
+                </div>
+                <!-- 예쁜 식판 느낌의 장바구니 리스트 -->
+                <ul id="cartList" class="cart-list empty">
+                    <li class="empty-msg">원하시는 상품을 담아주세요.</li>
+                </ul>
+            </section>
+
+            <section class="summary-section">
+                <div class="summary-row">
+                    <span>상품 금액</span>
+                    <span id="itemsTotal">0원</span>
+                </div>
+                <div class="summary-row">
+                    <span>배송비 <small id="shippingTooltip">(기본 배송비)</small></span>
+                    <span id="shippingFee">0원</span>
+                </div>
+                <hr>
+                <div class="summary-row total">
+                    <span>총 결제 예상 금액</span>
+                    <span id="grandTotal" class="highlight">0원</span>
+                </div>
+            </section>
+
+            <div class="action-section">
+                <button type="button" id="btnCopyEstimate" class="btn-action">
+                    📋 견적 내용 복사하기
+                </button>
+                <p class="help-text">복사 후 대표님께 바로 카톡으로 보내주세요!</p>
+            </div>
+        </main>
+        
+        <!-- 토스트 메시지 -->
+        <div id="toast" class="toast">복사 완료!</div>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
