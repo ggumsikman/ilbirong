@@ -1,13 +1,11 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // === 환경 변수 (설정) ===
-    const CONFIG = {
-        CUSTOM_PRICE_PER_SQM: 8000, // 헤베(1㎡)당 단가
-        MIN_CUSTOM_PRICE: 5000      // 최소 주문 금액
-    };
+// 전역 환경 설정 (앱 전체)
+window.APP_CONFIG = {
+    ADMIN_PASSWORD: "1234" // 히든 관리자 모드 비밀번호
+};
 
+document.addEventListener('DOMContentLoaded', () => {
     // === 상태 (State) ===
-    let cart = []; // 장바구니 배열
-    // 현재 선택 중인 상태
+    let cart = []; 
     let selectedCategoryId = "";
     let selectedOptionId = "";
     let isDynamicCustomSelected = false;
@@ -39,14 +37,33 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // === 초기화 로직 ===
-    function init() {
-        // 1. 카테고리 셀렉트옵션 채우기
-        PRODUCT_DATA.forEach(cat => {
+    window.reinitApp = function() {
+        // 관리자가 데이터 수정 후 폼 재로드 시 호출
+        selectedCategoryId = "";
+        selectedOptionId = "";
+        quantity = 1;
+        isDynamicCustomSelected = false;
+        els.customSizeGroup.style.display = 'none';
+
+        els.categorySelect.innerHTML = '<option value="">카테고리를 선택해주세요</option>';
+        els.productSelect.innerHTML = '<option value="">먼저 카테고리를 선택해주세요</option>';
+        els.productSelect.disabled = true;
+        
+        window.PRODUCT_DATA.forEach(cat => {
             const option = document.createElement('option');
             option.value = cat.id;
             option.textContent = cat.name;
             els.categorySelect.appendChild(option);
         });
+
+        // 장바구니에 담긴 상품 중 삭제된 게 있을 수 있으나 단순성을 위해 놔둠 (실제 서비스 시 비우는 편이 안전)
+        // cart = []; 
+        renderCart();
+        updateAddButtonState();
+    };
+
+    function init() {
+        window.reinitApp();
 
         // 2. 이벤트 리스너 등록
         els.categorySelect.addEventListener('change', handleCategoryChange);
@@ -72,17 +89,24 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAddButtonState();
 
         if (selectedCategoryId) {
-            const category = PRODUCT_DATA.find(c => c.id === selectedCategoryId);
+            const category = window.PRODUCT_DATA.find(c => c.id === selectedCategoryId);
+            
+            // 일반 상품들 렌더링
             category.options.forEach(opt => {
                 const optEl = document.createElement('option');
                 optEl.value = opt.id;
-                if (opt.isDynamicCustom) {
-                    optEl.textContent = opt.name;
-                } else {
-                    optEl.textContent = `${opt.name} (${opt.price.toLocaleString()}원)`;
-                }
+                optEl.textContent = `${opt.name} (${opt.price.toLocaleString()}원)`;
                 els.productSelect.appendChild(optEl);
             });
+
+            // 비규격 옵션 자동 주입 (enabled=true 일 때만)
+            if (category.customConfig && category.customConfig.enabled) {
+                const optEl = document.createElement('option');
+                optEl.value = "dynamic_custom_id";
+                optEl.textContent = "비규격(직접입력)";
+                els.productSelect.appendChild(optEl);
+            }
+
             els.productSelect.disabled = false;
         } else {
             els.productSelect.disabled = true;
@@ -95,10 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         quantity = 1;
         els.quantityInput.value = quantity;
         
-        const category = PRODUCT_DATA.find(c => c.id === selectedCategoryId);
-        const option = category ? category.options.find(o => o.id === selectedOptionId) : null;
-        
-        isDynamicCustomSelected = option ? !!option.isDynamicCustom : false;
+        isDynamicCustomSelected = (selectedOptionId === "dynamic_custom_id");
         
         if (isDynamicCustomSelected) {
             els.customSizeGroup.style.display = 'block';
@@ -113,18 +134,23 @@ document.addEventListener('DOMContentLoaded', () => {
     function calculateDynamicPrice() {
         if (!isDynamicCustomSelected) return;
 
+        const category = window.PRODUCT_DATA.find(c => c.id === selectedCategoryId);
+        if (!category || !category.customConfig) return;
+
+        const cnf = category.customConfig;
         const width = parseFloat(els.customWidth.value) || 0;
         const height = parseFloat(els.customHeight.value) || 0;
 
         if (width > 0 && height > 0) {
-            // 가격 산식: (가로 * 세로 / 10000) * 단가
+            // 공식: (가로 * 세로 / 10000) * 기본원가 * (1 + 마진율/100)
             const areaSqm = (width * height) / 10000;
-            let rawPrice = areaSqm * CONFIG.CUSTOM_PRICE_PER_SQM;
+            let rawCost = areaSqm * cnf.baseCost;
+            let finalMarginPrice = rawCost * (1 + (cnf.marginRate / 100));
             
-            // 최소 주문 금액 적용
-            computedCustomPrice = Math.max(rawPrice, CONFIG.MIN_CUSTOM_PRICE);
+            // 최소 주문 금액 보호
+            computedCustomPrice = Math.max(finalMarginPrice, cnf.minPrice);
             
-            // 깔끔한 배수(10원 단위)
+            // 깔끔한 배수(10원 단위 반올림 처리)
             computedCustomPrice = Math.round(computedCustomPrice / 10) * 10;
         } else {
             computedCustomPrice = 0;
@@ -162,20 +188,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === 장바구니 로직 ===
     function addToCart() {
-        const category = PRODUCT_DATA.find(c => c.id === selectedCategoryId);
-        const option = category.options.find(o => o.id === selectedOptionId);
+        const category = window.PRODUCT_DATA.find(c => c.id === selectedCategoryId);
+        if (!category) return;
 
-        if (!category || !option) return;
+        let finalOptionName = "";
+        let finalPrice = 0;
 
-        let finalOptionName = option.name;
-        let finalPrice = option.price;
-
-        // 비규격 상품 정보 병합
         if (isDynamicCustomSelected) {
             const w = els.customWidth.value;
             const h = els.customHeight.value;
             finalOptionName = `비규격(${w}x${h}cm)`;
             finalPrice = computedCustomPrice;
+        } else {
+            const option = category.options.find(o => o.id === selectedOptionId);
+            if (!option) return;
+            finalOptionName = option.name;
+            finalPrice = option.price;
         }
 
         const cartItem = {
@@ -292,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
         text += `총 예상 결제 금액: ${grandTotal.toLocaleString()}원\n\n`;
         text += `(위 내용을 카톡 방에 전송해주세요. 확인 후 친절하게 안내해 드릴게요! 💛)`;
 
-        // 클립보드 복사 API 사용
         navigator.clipboard.writeText(text).then(() => {
             showToast("✅ 카톡 공유용 견적서가 텍스트로 복사되었어요!");
         }).catch(err => {
