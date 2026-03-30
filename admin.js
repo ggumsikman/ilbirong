@@ -216,6 +216,60 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // === 데이터 내보내기 로직 ===
+    const btnAdminExport = document.getElementById('btnAdminExport');
+    if (btnAdminExport) {
+        btnAdminExport.addEventListener('click', () => {
+            if (confirm("현재 작성하신 데이터를 웹 배포용 'data.js' 파일로 다운로드 하시겠습니까?\n(다운로드 전 현재 작성한 내용이 저장됩니다)")) {
+                // 다운로드 전 로컬에 먼저 안전하게 저장
+                window.PRODUCT_DATA = draftData;
+                window.DataManager.saveData(draftData);
+                if (typeof window.reinitApp === 'function') window.reinitApp();
+
+                const dataJson = JSON.stringify(draftData, null, 4);
+                const fileContent = `// 일비롱디자인 애플리케이션 초기 데이터 구조 (초기화 빌드용)
+// 이 파일은 브라우저의 localStorage가 비어있을 때 또는 GitHub 배포용으로 사용됩니다.
+const INITIAL_PRODUCT_DATA = ${dataJson};
+
+// 데이터 매니저 (LocalStorage 제어)
+const DataManager = {
+    getKey: () => 'ilbirong_products_v2', // v2 데이터 키
+    
+    loadData: function() {
+        const stored = localStorage.getItem(this.getKey());
+        if (stored) {
+            try { return JSON.parse(stored); } catch (e) { return this.resetData(); }
+        }
+        return this.resetData();
+    },
+
+    saveData: function(dataArray) {
+        localStorage.setItem(this.getKey(), JSON.stringify(dataArray));
+    },
+
+    resetData: function() {
+        const copy = JSON.parse(JSON.stringify(INITIAL_PRODUCT_DATA));
+        this.saveData(copy);
+        return copy;
+    }
+};
+
+window.PRODUCT_DATA = DataManager.loadData();
+`;
+                // Blob 및 파일 다운로드 트리거
+                const blob = new Blob([fileContent], { type: "text/javascript;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "data.js";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        });
+    }
+
     // === 초기화 로직 ===
     btnAdminReset.addEventListener('click', () => {
         if (confirm("경고: 모든 데이터가 덮어씌워집니다. 공장 초기화하시겠습니까? (기존 맞춤 데이터 상실됨)")) {
