@@ -93,6 +93,34 @@ document.addEventListener('DOMContentLoaded', () => {
         els.finishingSelect.addEventListener('change', handleFinishingChange);
     }
 
+    // === 높이별 소재비율 보간 함수 ===
+    // heightRates 데이터포인트 사이는 선형 보간, 범위 밖은 공식 계산
+    function interpolateRatePerWidth(H, formula) {
+        const rates = formula.heightRates;
+        if (!rates || rates.length < 2) {
+            return formula.areaCoeff * H + formula.widthCoeff;
+        }
+
+        const sorted = [...rates].sort((a, b) => a.h - b.h);
+
+        // 첫 데이터포인트 이하: 공식으로 외삽
+        if (H <= sorted[0].h) {
+            return formula.areaCoeff * H + formula.widthCoeff;
+        }
+        // 마지막 데이터포인트 이상: 공식으로 외삽
+        if (H >= sorted[sorted.length - 1].h) {
+            return formula.areaCoeff * H + formula.widthCoeff;
+        }
+        // 사이 구간: 선형 보간
+        for (let i = 0; i < sorted.length - 1; i++) {
+            if (H >= sorted[i].h && H <= sorted[i + 1].h) {
+                const t = (H - sorted[i].h) / (sorted[i + 1].h - sorted[i].h);
+                return sorted[i].rate + t * (sorted[i + 1].rate - sorted[i].rate);
+            }
+        }
+        return formula.areaCoeff * H + formula.widthCoeff;
+    }
+
     // === 이벤트 핸들러 ===
     function handleFinishingChange() {
         const opt = els.finishingSelect.options[els.finishingSelect.selectedIndex];
@@ -202,9 +230,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 가로폭은 공급사 롤 규격(50cm 단위)으로 올림 적용
                 const step = cnf.formula.widthStep || 50;
                 const effectiveWidth = Math.ceil(width / step) * step;
-                rawCost = cnf.formula.areaCoeff * effectiveWidth * height
-                        + cnf.formula.widthCoeff * effectiveWidth
-                        + cnf.formula.baseFee;
+                // 소재비율(eff_W 1cm당) = 높이별 실측 데이터로 보간
+                const ratePerWidth = interpolateRatePerWidth(height, cnf.formula);
+                rawCost = ratePerWidth * effectiveWidth + cnf.formula.baseFee;
             } else {
                 // 레거시: 헤베당 단가 방식
                 const areaSqm = (width * height) / 10000;
