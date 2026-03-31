@@ -103,12 +103,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const sorted = [...rates].sort((a, b) => a.h - b.h);
 
-        // 첫 데이터포인트 이하: 공식으로 외삽
-        if (H <= sorted[0].h) {
-            return formula.areaCoeff * H + formula.widthCoeff;
+        // 첫 데이터포인트 미만: 최솟값 rate 사용 (외삽 시 음수 방지, 공급사 최소 소재비 보장)
+        if (H < sorted[0].h) {
+            return sorted[0].rate;
         }
-        // 마지막 데이터포인트 이상: 공식으로 외삽
-        if (H >= sorted[sorted.length - 1].h) {
+        // 마지막 데이터포인트 초과: 공식으로 외삽
+        if (H > sorted[sorted.length - 1].h) {
             return formula.areaCoeff * H + formula.widthCoeff;
         }
         // 사이 구간: 선형 보간
@@ -240,6 +240,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 rawCost = areaSqm * (cnf.baseCost || 8000);
             }
             rawCost = Math.max(rawCost, 0);
+
+            // 공급사 소형 자동 재단비: 높이가 테이블 최솟값(30cm) 미만이면 1,400원 가산
+            if (cnf.formula && cnf.formula.heightRates && cnf.formula.heightRates.length > 0) {
+                const minTableH = Math.min(...cnf.formula.heightRates.map(r => r.h));
+                if (height < minTableH) {
+                    rawCost += 1400;
+                }
+            }
 
             const marginRate = cnf.marginRate || 0;
             let finalPrice = rawCost * (1 + marginRate / 100);
