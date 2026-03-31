@@ -5,12 +5,14 @@ window.APP_CONFIG = {
 
 document.addEventListener('DOMContentLoaded', () => {
     // === 상태 (State) ===
-    let cart = []; 
+    let cart = [];
     let selectedCategoryId = "";
     let selectedOptionId = "";
     let isDynamicCustomSelected = false;
     let computedCustomPrice = 0;
     let quantity = 1;
+    let finishingPrice = 0;
+    let finishingLabel = '';
 
     // === DOM 요소 참조 ===
     const els = {
@@ -33,7 +35,18 @@ document.addEventListener('DOMContentLoaded', () => {
         grandTotal: document.getElementById('grandTotal'),
         
         btnCopyEstimate: document.getElementById('btnCopyEstimate'),
-        toast: document.getElementById('toast')
+        toast: document.getElementById('toast'),
+
+        priceBreakdown: document.getElementById('priceBreakdown'),
+        priceSimplePlaceholder: document.getElementById('priceSimplePlaceholder'),
+        rawCostDisplay: document.getElementById('rawCostDisplay'),
+        marginRateDisplay: document.getElementById('marginRateDisplay'),
+        marginDisplay: document.getElementById('marginDisplay'),
+        finishingSelect: document.getElementById('finishingSelect'),
+        finishingGroup: document.getElementById('finishingGroup'),
+        finishingBreakdownRow: document.getElementById('finishingBreakdownRow'),
+        finishingLabelDisplay: document.getElementById('finishingLabelDisplay'),
+        finishingPriceDisplay: document.getElementById('finishingPriceDisplay'),
     };
 
     // === 초기화 로직 ===
@@ -43,7 +56,10 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedOptionId = "";
         quantity = 1;
         isDynamicCustomSelected = false;
+        finishingPrice = 0;
+        finishingLabel = '';
         els.customSizeGroup.style.display = 'none';
+        els.finishingGroup.style.display = 'none';
 
         els.categorySelect.innerHTML = '<option value="">카테고리를 선택해주세요</option>';
         els.productSelect.innerHTML = '<option value="">먼저 카테고리를 선택해주세요</option>';
@@ -74,18 +90,52 @@ document.addEventListener('DOMContentLoaded', () => {
         els.btnPlus.addEventListener('click', () => updateQuantity(1));
         els.btnAddCart.addEventListener('click', addToCart);
         els.btnCopyEstimate.addEventListener('click', copyEstimate);
+        els.finishingSelect.addEventListener('change', handleFinishingChange);
     }
 
     // === 이벤트 핸들러 ===
+    function handleFinishingChange() {
+        const opt = els.finishingSelect.options[els.finishingSelect.selectedIndex];
+        finishingPrice = parseInt(opt.dataset.price) || 0;
+        finishingLabel = opt.dataset.label || opt.textContent;
+        calculateDynamicPrice();
+    }
+
+    function populateFinishingOptions() {
+        const category = window.PRODUCT_DATA.find(c => c.id === selectedCategoryId);
+        els.finishingSelect.innerHTML = '';
+        finishingPrice = 0;
+        finishingLabel = '';
+
+        if (category && category.customConfig && category.customConfig.finishingOptions) {
+            category.customConfig.finishingOptions.forEach(opt => {
+                const el = document.createElement('option');
+                el.value = opt.id;
+                el.dataset.price = opt.price;
+                el.dataset.label = opt.label;
+                el.textContent = opt.price > 0
+                    ? `${opt.label} (+${opt.price.toLocaleString()}원)`
+                    : opt.label;
+                els.finishingSelect.appendChild(el);
+            });
+            els.finishingGroup.style.display = 'block';
+        } else {
+            els.finishingGroup.style.display = 'none';
+        }
+    }
+
     function handleCategoryChange(e) {
         selectedCategoryId = e.target.value;
         selectedOptionId = "";
         quantity = 1;
         isDynamicCustomSelected = false;
+        finishingPrice = 0;
+        finishingLabel = '';
 
         els.productSelect.innerHTML = '<option value="">상세 상품 및 크기를 선택해주세요</option>';
         els.quantityInput.value = quantity;
         els.customSizeGroup.style.display = 'none';
+        els.finishingGroup.style.display = 'none';
         updateAddButtonState();
 
         if (selectedCategoryId) {
@@ -120,12 +170,16 @@ document.addEventListener('DOMContentLoaded', () => {
         els.quantityInput.value = quantity;
         
         isDynamicCustomSelected = (selectedOptionId === "dynamic_custom_id");
-        
+        finishingPrice = 0;
+        finishingLabel = '';
+
         if (isDynamicCustomSelected) {
             els.customSizeGroup.style.display = 'block';
-            calculateDynamicPrice(); // 초기화 및 다시 계산
+            populateFinishingOptions();
+            calculateDynamicPrice();
         } else {
             els.customSizeGroup.style.display = 'none';
+            els.finishingGroup.style.display = 'none';
         }
 
         updateAddButtonState();
@@ -142,21 +196,56 @@ document.addEventListener('DOMContentLoaded', () => {
         const height = parseFloat(els.customHeight.value) || 0;
 
         if (width > 0 && height > 0) {
-            // 공식: (가로 * 세로 / 10000) * 기본원가 * (1 + 마진율/100)
-            const areaSqm = (width * height) / 10000;
-            let rawCost = areaSqm * cnf.baseCost;
-            let finalMarginPrice = rawCost * (1 + (cnf.marginRate / 100));
-            
+            // 공급사 실측 원가 공식 적용
+            let rawCost;
+            if (cnf.formula) {
+                // 가로폭은 공급사 롤 규격(50cm 단위)으로 올림 적용
+                const step = cnf.formula.widthStep || 50;
+                const effectiveWidth = Math.ceil(width / step) * step;
+                rawCost = cnf.formula.areaCoeff * effectiveWidth * height
+                        + cnf.formula.widthCoeff * effectiveWidth
+                        + cnf.formula.baseFee;
+            } else {
+                // 레거시: 헤베당 단가 방식
+                const areaSqm = (width * height) / 10000;
+                rawCost = areaSqm * (cnf.baseCost || 8000);
+            }
+            rawCost = Math.max(rawCost, 0);
+
+            const marginRate = cnf.marginRate || 0;
+            let finalPrice = rawCost * (1 + marginRate / 100);
+
             // 최소 주문 금액 보호
-            computedCustomPrice = Math.max(finalMarginPrice, cnf.minPrice);
-            
-            // 깔끔한 배수(10원 단위 반올림 처리)
-            computedCustomPrice = Math.round(computedCustomPrice / 10) * 10;
+            computedCustomPrice = Math.max(finalPrice, cnf.minPrice || 0);
+
+            // 100원 단위 반올림
+            computedCustomPrice = Math.round(computedCustomPrice / 100) * 100;
+
+            // 가격 분해 표시
+            const marginAmt = computedCustomPrice - Math.round(rawCost / 100) * 100;
+            els.rawCostDisplay.textContent = Math.round(rawCost).toLocaleString() + '원';
+            els.marginRateDisplay.textContent = marginRate;
+            els.marginDisplay.textContent = '+' + Math.max(marginAmt, 0).toLocaleString() + '원';
+
+            if (finishingPrice > 0) {
+                els.finishingBreakdownRow.style.display = 'flex';
+                els.finishingLabelDisplay.textContent = finishingLabel;
+                els.finishingPriceDisplay.textContent = '+' + finishingPrice.toLocaleString() + '원';
+            } else {
+                els.finishingBreakdownRow.style.display = 'none';
+            }
+
+            els.priceBreakdown.style.display = 'block';
+            els.priceSimplePlaceholder.style.display = 'none';
         } else {
             computedCustomPrice = 0;
+            els.priceBreakdown.style.display = 'none';
+            els.finishingBreakdownRow.style.display = 'none';
+            els.priceSimplePlaceholder.style.display = 'block';
         }
 
-        els.customDynamicPrice.textContent = `${computedCustomPrice.toLocaleString()}원`;
+        const totalDisplayPrice = computedCustomPrice + finishingPrice;
+        els.customDynamicPrice.textContent = `${totalDisplayPrice.toLocaleString()}원`;
         updateAddButtonState();
     }
 
@@ -197,8 +286,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isDynamicCustomSelected) {
             const w = els.customWidth.value;
             const h = els.customHeight.value;
-            finalOptionName = `비규격(${w}x${h}cm)`;
-            finalPrice = computedCustomPrice;
+            finalOptionName = `비규격(${w}x${h}cm)${finishingPrice > 0 ? ' / ' + finishingLabel : ''}`;
+            finalPrice = computedCustomPrice + finishingPrice;
         } else {
             const option = category.options.find(o => o.id === selectedOptionId);
             if (!option) return;

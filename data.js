@@ -7,19 +7,45 @@ const INITIAL_PRODUCT_DATA = [
         requiresShipping: true,
         customConfig: {
             enabled: true,
-            baseCost: 8000,     // 1헤베(10,000㎠)당 기본 원가
-            marginRate: 0,      // 마진율 (%)
-            minPrice: 5000      // 최소 주문 금액
+            // 공급사 실측 원가 공식: 원가 = areaCoeff×W×H + widthCoeff×W + baseFee (W,H 단위: cm)
+            formula: {
+                areaCoeff: 0.72,   // 원/cm²
+                widthCoeff: -4,    // 원/cm
+                baseFee: 2000,     // 기본료 (원)
+                widthStep: 50      // 가로폭을 N cm 단위로 올림 계산 (공급사 롤 규격)
+            },
+            marginRate: 55,     // 마진율 (%)
+            minPrice: 5000,     // 최소 주문 금액
+            finishingOptions: [
+                { id: "none",          label: "후가공 선택 (기본)",            price: 0 },
+                { id: "heat_cut",      label: "열재단",                        price: 0 },
+                { id: "eyelet_4",      label: "아일렛타공 (사방4개)",           price: 2000 },
+                { id: "eyelet_8",      label: "아일렛타공 (8개)",               price: 4000 },
+                { id: "eyelet4_cube4", label: "아일렛타공4개 + 큐방4개",        price: 4000 },
+                { id: "eyelet8_cube8", label: "아일렛타공8개 + 큐방8개",        price: 8000 },
+                { id: "rope_loop",     label: "끈고리가공 (로프포함)",           price: 4000 },
+                { id: "rope_3m",       label: "로프 (3m)",                     price: 1000 }
+            ]
         },
         options: [
-            { id: "c1_1", name: "300cm x 70cm", price: 30000 },
-            { id: "c1_2", name: "400cm x 70cm", price: 37000 },
-            { id: "c1_3", name: "500cm x 90cm", price: 45000 },
-            { id: "c1_4", name: "포토존 180cm x 150cm", price: 32000 },
-            { id: "c1_5", name: "포토존 200cm x 180cm", price: 38000 },
-            { id: "c1_6", name: "포토존 240cm x 180cm", price: 45000 },
-            { id: "c1_7", name: "포토존 300cm x 200cm", price: 80000 }
-            // 비규격 직접입력은 이제 이 배열에 들어있지 않고 동적으로 삽입됩니다.
+            // 가로형
+            { id: "c1_1",  name: "[가로형] 300cm × 70cm",  price: 30000 },
+            { id: "c1_2",  name: "[가로형] 400cm × 70cm",  price: 37000 },
+            { id: "c1_3",  name: "[가로형] 500cm × 90cm",  price: 45000 },
+            { id: "c1_4",  name: "[가로형] 600cm × 90cm",  price: 55000 },
+            { id: "c1_5",  name: "[가로형] 700cm × 90cm",  price: 65000 },
+            { id: "c1_6",  name: "[가로형] 800cm × 90cm",  price: 75000 },
+            { id: "c1_7",  name: "[가로형] 1000cm × 90cm", price: 95000 },
+            { id: "c1_8",  name: "[가로형] 1000cm × 100cm",price: 102000 },
+            // 포토존형
+            { id: "c1_9",  name: "[포토존] 180cm × 150cm", price: 32000 },
+            { id: "c1_10", name: "[포토존] 200cm × 180cm", price: 38000 },
+            { id: "c1_11", name: "[포토존] 240cm × 180cm", price: 45000 },
+            { id: "c1_12", name: "[포토존] 300cm × 180cm", price: 55000 },
+            // 대형포토존 (세로 180cm 이상 — 현수막 2장 이음 제작)
+            { id: "c1_13", name: "[대형포토존] 300cm × 200cm", price: 80000 },
+            { id: "c1_14", name: "[대형포토존] 300cm × 230cm", price: 85000 }
+            // 비규격 직접입력은 이 배열에 없고 동적으로 삽입됩니다.
         ]
     },
     {
@@ -79,7 +105,7 @@ const INITIAL_PRODUCT_DATA = [
 
 // 데이터 매니저 (LocalStorage 제어)
 const DataManager = {
-    getKey: () => 'ilbirong_products_v2', // v2 데이터 키
+    getKey: () => 'ilbirong_products_v3', // v3: 후가공 옵션 + 전체 사이즈 반영
     
     // 현재 데이터 로드 (없으면 기본값 반환 후 저장)
     loadData: function() {
@@ -109,4 +135,5 @@ const DataManager = {
 };
 
 // 전역 변수로 노출하여 앱에서 사용
+window.DataManager = DataManager;
 window.PRODUCT_DATA = DataManager.loadData();

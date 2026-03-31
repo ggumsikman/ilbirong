@@ -494,14 +494,51 @@ select:disabled {
 
 .custom-price-preview {
     margin-top: 12px;
-    text-align: right;
     font-size: 14px;
     color: var(--text-main);
 }
 
-.custom-price-preview strong {
+.price-breakdown {
+    background: #fffaf0;
+    border: 1px solid #f5e6c8;
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    font-size: 13px;
+}
+
+.breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    color: var(--text-muted);
+}
+
+.breakdown-row:last-child {
+    margin-bottom: 0;
+}
+
+.breakdown-divider {
+    border: none;
+    border-top: 1px dashed #e8d5b0;
+    margin: 7px 0;
+}
+
+.breakdown-total {
+    color: var(--text-main) !important;
+    font-size: 14px;
+}
+
+.breakdown-total strong {
     color: #FF6B81;
-    font-size: 16px;
+    font-size: 17px;
+}
+
+.price-simple-placeholder {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 0;
 }
 
 /* --- Admin UI --- */

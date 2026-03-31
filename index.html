@@ -54,8 +54,37 @@
                             <span class="unit">cm</span>
                         </div>
                     </div>
+
+                    <div class="finishing-group" id="finishingGroup" style="display:none; margin-top:12px;">
+                        <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:700;">후가공 선택</label>
+                        <div class="custom-select">
+                            <select id="finishingSelect"></select>
+                        </div>
+                    </div>
+
                     <div class="custom-price-preview">
-                        예상 단가: <strong id="customDynamicPrice">0원</strong>
+                        <div id="priceBreakdown" class="price-breakdown" style="display:none;">
+                            <div class="breakdown-row">
+                                <span>공급 원가</span>
+                                <span id="rawCostDisplay">-</span>
+                            </div>
+                            <div class="breakdown-row">
+                                <span>마진 (<span id="marginRateDisplay">55</span>%)</span>
+                                <span id="marginDisplay">-</span>
+                            </div>
+                            <div class="breakdown-row" id="finishingBreakdownRow" style="display:none;">
+                                <span>후가공 (<span id="finishingLabelDisplay">-</span>)</span>
+                                <span id="finishingPriceDisplay">-</span>
+                            </div>
+                            <div class="breakdown-divider"></div>
+                            <div class="breakdown-row breakdown-total">
+                                <span>예상 단가 (1장)</span>
+                                <strong id="customDynamicPrice">-</strong>
+                            </div>
+                        </div>
+                        <div id="priceSimplePlaceholder" class="price-simple-placeholder">
+                            사이즈를 입력하면 예상 단가가 나와요
+                        </div>
                     </div>
                 </div>
 

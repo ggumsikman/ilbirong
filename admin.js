@@ -88,22 +88,47 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             // 2. 비규격 설정
-            const cnf = cat.customConfig || { enabled: false, baseCost: 8000, marginRate: 0, minPrice: 5000 };
+            const cnf = cat.customConfig || { enabled: false, formula: { areaCoeff: 0.72, widthCoeff: -4, baseFee: 2000 }, marginRate: 55, minPrice: 5000 };
             const customBox = document.createElement('div');
             customBox.className = 'admin-custom-box';
-            customBox.innerHTML = `
-                <div style="font-weight:bold; margin-bottom: 8px;">📏 비규격(직접입력) 설정 자동화</div>
+
+            const formulaHtml = cnf.formula ? `
+                <div style="font-size:12px; color:#aaa; margin: 10px 0 6px; border-top: 1px dashed #e0d5c5; padding-top:8px;">
+                    ⚙️ 원가 공식 (공급사 기준 — 단가 변경 시에만 수정)
+                </div>
                 <div class="admin-row">
-                    <label>사용여부:</label>
+                    <label>면적계수</label>
+                    <input type="number" step="0.01" class="admin-input" value="${cnf.formula.areaCoeff}" data-cat-idx="${catIndex}" data-field="custom.formula.areaCoeff" style="width:70px;"> 원/cm²
+                </div>
+                <div class="admin-row">
+                    <label>폭 계수</label>
+                    <input type="number" step="1" class="admin-input" value="${cnf.formula.widthCoeff}" data-cat-idx="${catIndex}" data-field="custom.formula.widthCoeff" style="width:70px;"> 원/cm
+                </div>
+                <div class="admin-row">
+                    <label>기본료</label>
+                    <input type="number" class="admin-input" value="${cnf.formula.baseFee}" data-cat-idx="${catIndex}" data-field="custom.formula.baseFee" style="width:70px;"> 원
+                </div>
+            ` : `
+                <div class="admin-row">
+                    <label>원가</label>
+                    <input type="number" class="admin-input" value="${cnf.baseCost || 8000}" data-cat-idx="${catIndex}" data-field="custom.baseCost"> 원(1㎡당)
+                </div>
+            `;
+
+            customBox.innerHTML = `
+                <div style="font-weight:bold; margin-bottom: 8px;">📏 비규격(직접입력) 설정</div>
+                <div class="admin-row">
+                    <label>사용여부</label>
                     <input type="checkbox" ${cnf.enabled ? 'checked' : ''} data-cat-idx="${catIndex}" data-field="custom.enabled"> 허용함
                 </div>
-                <div class="admin-row">
-                    <label>원가:</label>
-                    <input type="number" class="admin-input" value="${cnf.baseCost}" data-cat-idx="${catIndex}" data-field="custom.baseCost"> 원(1㎡당)
+                ${formulaHtml}
+                <div class="admin-row" style="background:#fff4e6; padding:8px; border-radius:8px; margin-top:8px;">
+                    <label style="font-weight:bold; color:#d4a373;">마진율</label>
+                    <input type="number" class="admin-input" value="${cnf.marginRate}" data-cat-idx="${catIndex}" data-field="custom.marginRate" style="width:60px; font-weight:bold;"> %
                 </div>
-                <div class="admin-row">
-                    <label>마진율:</label>
-                    <input type="number" class="admin-input" value="${cnf.marginRate}" data-cat-idx="${catIndex}" data-field="custom.marginRate"> %
+                <div class="admin-row" style="margin-top:4px;">
+                    <label>최소금액</label>
+                    <input type="number" class="admin-input" value="${cnf.minPrice || 5000}" data-cat-idx="${catIndex}" data-field="custom.minPrice" style="width:80px;"> 원
                 </div>
             `;
             card.appendChild(customBox);
@@ -174,6 +199,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!draftData[cIdx].customConfig) draftData[cIdx].customConfig = {};
                     const key = field.split('.')[1];
                     if (key === 'enabled') draftData[cIdx].customConfig.enabled = el.checked;
+                    else if (key === 'formula') {
+                        if (!draftData[cIdx].customConfig.formula) draftData[cIdx].customConfig.formula = {};
+                        const subKey = field.split('.')[2];
+                        draftData[cIdx].customConfig.formula[subKey] = parseFloat(el.value) || 0;
+                    }
+                    else if (key === 'minPrice') draftData[cIdx].customConfig.minPrice = parseInt(el.value) || 0;
                     else draftData[cIdx].customConfig[key] = parseFloat(el.value) || 0;
                 }
 
