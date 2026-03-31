@@ -9,13 +9,20 @@ const INITIAL_PRODUCT_DATA = [
             enabled: true,
             // 공급사 실측 원가 공식: 원가 = areaCoeff×W×H + widthCoeff×W + baseFee (W,H 단위: cm)
             formula: {
-                areaCoeff: 0.72,   // 원/cm² (H≤100, H≥200 구간 공식용)
-                widthCoeff: -4,    // 원/cm  (H≤100, H≥200 구간 공식용)
+                areaCoeff: 0.72,   // 원/cm² (범위 밖 외삽용)
+                widthCoeff: -4,    // 원/cm  (범위 밖 외삽용)
                 baseFee: 2000,     // 기본제작비 (원) — 항상 고정
-                widthStep: 50,     // 가로폭을 N cm 단위로 올림 계산 (공급사 롤 규격)
-                // 높이별 소재비율 (eff_W 1cm당 소재비 원가) — 실측 검증 데이터
-                // 중간 높이는 선형 보간, 범위 밖은 areaCoeff×H+widthCoeff 공식으로 계산
+                widthStep: 50,     // 가로폭을 50cm 단위로 올림 계산 (공급사 롤 규격)
+                minWidth: 100,     // 최소 유효 가로폭 (공급사 최소 과금 단위)
+                // 높이별 소재비율 (eff_W 1cm당 소재비) — primead.kr 실측 전수 검증
                 heightRates: [
+                    { h: 30,  rate: 33  },
+                    { h: 40,  rate: 34  },
+                    { h: 50,  rate: 35  },
+                    { h: 60,  rate: 38  },
+                    { h: 70,  rate: 40  },
+                    { h: 80,  rate: 42  },
+                    { h: 90,  rate: 44  },
                     { h: 100, rate: 68  },
                     { h: 150, rate: 90  },
                     { h: 200, rate: 140 }
@@ -112,7 +119,7 @@ const INITIAL_PRODUCT_DATA = [
 
 // 데이터 매니저 (LocalStorage 제어)
 const DataManager = {
-    getKey: () => 'ilbirong_products_v4', // v4: 높이별 소재비율 보간 적용
+    getKey: () => 'ilbirong_products_v5', // v5: 전체 높이 실측 데이터 + 최소폭 100cm 적용
     
     // 현재 데이터 로드 (없으면 기본값 반환 후 저장)
     loadData: function() {

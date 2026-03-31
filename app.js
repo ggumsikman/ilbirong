@@ -227,9 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // 공급사 실측 원가 공식 적용
             let rawCost;
             if (cnf.formula) {
-                // 가로폭은 공급사 롤 규격(50cm 단위)으로 올림 적용
+                // 가로폭: 50cm 단위 올림 + 최소 100cm 적용 (공급사 롤 규격)
                 const step = cnf.formula.widthStep || 50;
-                const effectiveWidth = Math.ceil(width / step) * step;
+                const minW = cnf.formula.minWidth || 100;
+                const effectiveWidth = Math.max(Math.ceil(width / step) * step, minW);
                 // 소재비율(eff_W 1cm당) = 높이별 실측 데이터로 보간
                 const ratePerWidth = interpolateRatePerWidth(height, cnf.formula);
                 rawCost = ratePerWidth * effectiveWidth + cnf.formula.baseFee;
