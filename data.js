@@ -24,7 +24,15 @@ const INITIAL_PRODUCT_DATA = [
                     { h: 80,  rate: 42  },
                     { h: 90,  rate: 44  },
                     { h: 100, rate: 68  },
+                    { h: 110, rate: 70  },
+                    { h: 120, rate: 73  },
+                    { h: 130, rate: 76  },
+                    { h: 140, rate: 78  },
                     { h: 150, rate: 90  },
+                    { h: 160, rate: 92  },
+                    { h: 170, rate: 94  },
+                    { h: 180, rate: 94  },
+                    { h: 190, rate: 136 },
                     { h: 200, rate: 140 }
                 ]
             },

@@ -227,13 +227,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // 공급사 실측 원가 공식 적용
             let rawCost;
             if (cnf.formula) {
-                // 가로폭: 50cm 단위 올림 + 최소 100cm 적용 (공급사 롤 규격)
+                // 공급사 실측 공식: rate(짧은변) × ceil(긴변/50)×50
+                // 짧은 변으로 rate 결정, 긴 변을 50cm 단위 올림하여 소재량 계산
                 const step = cnf.formula.widthStep || 50;
-                const minW = cnf.formula.minWidth || 100;
-                const effectiveWidth = Math.max(Math.ceil(width / step) * step, minW);
-                // 소재비율(eff_W 1cm당) = 높이별 실측 데이터로 보간
-                const ratePerWidth = interpolateRatePerWidth(height, cnf.formula);
-                rawCost = ratePerWidth * effectiveWidth + cnf.formula.baseFee;
+                const minL = cnf.formula.minWidth || 100;
+                const S = Math.min(width, height);  // 짧은 변
+                const L = Math.max(width, height);  // 긴 변
+                const effectiveLong = Math.max(Math.ceil(L / step) * step, minL);
+                const ratePerLong = interpolateRatePerWidth(S, cnf.formula);
+                rawCost = ratePerLong * effectiveLong + cnf.formula.baseFee;
             } else {
                 // 레거시: 헤베당 단가 방식
                 const areaSqm = (width * height) / 10000;
@@ -241,10 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             rawCost = Math.max(rawCost, 0);
 
-            // 공급사 소형 자동 재단비: 높이가 테이블 최솟값(30cm) 미만이면 1,400원 가산
+            // 공급사 소형 자동 재단비: 짧은 변이 테이블 최솟값(30cm) 미만이면 1,400원 가산
             if (cnf.formula && cnf.formula.heightRates && cnf.formula.heightRates.length > 0) {
                 const minTableH = Math.min(...cnf.formula.heightRates.map(r => r.h));
-                if (height < minTableH) {
+                if (S < minTableH) {
                     rawCost += 1400;
                 }
             }
