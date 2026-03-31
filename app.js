@@ -226,13 +226,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (width > 0 && height > 0) {
             // 공급사 실측 원가 공식 적용
             let rawCost;
+            const S = Math.min(width, height);  // 짧은 변 (스코프를 블록 밖으로)
+            const L = Math.max(width, height);  // 긴 변
             if (cnf.formula) {
                 // 공급사 실측 공식: rate(짧은변) × ceil(긴변/50)×50
-                // 짧은 변으로 rate 결정, 긴 변을 50cm 단위 올림하여 소재량 계산
                 const step = cnf.formula.widthStep || 50;
                 const minL = cnf.formula.minWidth || 100;
-                const S = Math.min(width, height);  // 짧은 변
-                const L = Math.max(width, height);  // 긴 변
                 const effectiveLong = Math.max(Math.ceil(L / step) * step, minL);
                 const ratePerLong = interpolateRatePerWidth(S, cnf.formula);
                 rawCost = ratePerLong * effectiveLong + cnf.formula.baseFee;
